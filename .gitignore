@@ -34,3 +34,20 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# python
+__pycache__/
+*.pyc
+.venv/
+
+# builds
+dist/
+build/
+
+# generated frames
+frames/
+ascii_frames/
+
+# OS
+.DS_Store
+Thumbs.db
