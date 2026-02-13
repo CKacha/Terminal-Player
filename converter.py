@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from pathlib import Path
 import os
 import sys 
 import time 
@@ -24,6 +25,10 @@ for ext in VIDEO_EXTS:
 if not video_files:
     print("No video found, make sure that its a .mp4/.avi/.mkv/.mov")
     sys.exit(1)
+
+VIDEO_PATH = str(video_files[0])
+print("Using video:", Path(VIDEO_PATH).name)
+time.sleep(1)
 
 TARGET_WIDTH = 120
 FPS_CAP = 30 # DONT CHANGE THIS... you don't want to put it as True lmao
@@ -55,7 +60,7 @@ def frame_to_text(frame, out_w, out_h):
         _, bw = cv2.threshold(small, 128, 255, cv2.THRESH_BINARY)
 
     mask = bw > 0
-    chars = np.where(mask, CHAR_ON, CHAR_OFF)
+    chars = np.where(mask, ON, OFF)
 
     return "\n".join("".join(row) for row in chars)
 

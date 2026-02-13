@@ -17,3 +17,8 @@ I do not want to read through all of this sob
 
 oo learned about autopytoexe, will use that 
 
+imports needed:
+
+py -m pip install opencv-python numpy
+
+other ones should be auto installed with python 
