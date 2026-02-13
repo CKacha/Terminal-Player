@@ -1,16 +1,19 @@
-Options for reading videos
+Options for reading videos:
 
 FFmpeg
 cv2
 
 cv2 better apprently?
-
-Read every frame -> Convert to output immidetely 
+look into ffmpeg cv2 pmo
 
 os - https://docs.python.org/3/library/os.html
 ffmpeg - https://kkroening.github.io/ffmpeg-python/
 cv2 NOT ONE - https://docs.opencv.org/4.x/d6/d00/tutorial_py_root.html
 
-numpy
-time
+numpy - https://numpy.org/doc/stable/user/index.html#user
+time - https://docs.python.org/3/library/time.html
+
+I do not want to read through all of this sob 
+
+oo learned about autopytoexe, will use that 
 

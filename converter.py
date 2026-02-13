@@ -4,10 +4,25 @@ import os
 import sys 
 import time 
 
-VIDEO_PATH = sys.argv[1] if len(sys.argv) > 1 else None
+# Thing wasn't working or I'm stupid idk
+# Going to make it so that the target video will always be called video.mp4
 
-if not VIDEO_PATH:
-    print(" idiot go fix your code or file idk")
+# VIDEO_PATH = sys.argv[1] if len(sys.argv) > 1 else None
+
+# if not VIDEO_PATH:
+#     print(" idiot go fix your code or file idk")
+#     sys.exit(1)
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+
+VIDEO_EXTS = [".mp4", ".avi", ".mkv", ".mov"]
+
+video_files = []
+for ext in VIDEO_EXTS:
+    video_files.extend(SCRIPT_DIR.glob(f"*{ext}"))
+
+if not video_files:
+    print("No video found, make sure that its a .mp4/.avi/.mkv/.mov")
     sys.exit(1)
 
 TARGET_WIDTH = 120
@@ -27,8 +42,8 @@ def get_terminal_size():
         cols, rows = os.get_terminal_size()
         return cols, rows 
     except OSError:
-        print("can't get terminal size retryyyy")
-        exit(1)
+        print("can't get terminal size, will go with 120x40")
+        return 120, 40
 
 def frame_to_text(frame, out_w, out_h):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -52,7 +67,6 @@ def main():
 
     term_w, term_h = get_terminal_size()
     out_w = min(TARGET_WIDTH, term_w)
-
     out_h = min(term_h - 2, max(10, int(out_w * 0.50)))
 
     frame_dt = 1.0/FPS_CAP
