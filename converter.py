@@ -1,3 +1,5 @@
+import cv2
+import numpy as np
 import os
 import sys 
 import time 
@@ -8,8 +10,8 @@ if not VIDEO_PATH:
     print(" idiot go fix your code or file idk")
     sys.exit(1)
 
-TARGET_WIDTH = 80
-FPS_CAP = None
+TARGET_WIDTH = 120
+FPS_CAP = 30 # DONT CHANGE THIS... you don't want to put it as True lmao
 USE_OTSU = True
 
 ON = "█"
@@ -37,6 +39,10 @@ def frame_to_text(frame, out_w, out_h):
     else:
         _, bw = cv2.threshold(small, 128, 255, cv2.THRESH_BINARY)
 
+    mask = bw > 0
+    chars = np.where(mask, CHAR_ON, CHAR_OFF)
+
+    return "\n".join("".join(row) for row in chars)
 
 def main():
     cap = cv2.VideoCapture(VIDEO_PATH)
@@ -47,13 +53,41 @@ def main():
     term_w, term_h = get_terminal_size()
     out_w = min(TARGET_WIDTH, term_w)
 
-    out_h = min()
+    out_h = min(term_h - 2, max(10, int(out_w * 0.50)))
 
     frame_dt = 1.0/FPS_CAP
     next_t = time.perf_counter()
 
     sys.stdout.write(CLEAR + HOME + HIDE_CURSOR)
     sys.stdout.flush()
+
+    try:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            txt= frame_to_text(frame, out_w, out_h)
+
+            sys.stdout.write(HOME)
+            sys.stdout.write(txt)
+            sys.stdout.write("\n")
+            sys.stdout.flush()
+
+            #fps cap bc my computer crashed earlier sob
+            next_t += frame_dt
+            now = time.perf_counter()
+            sleep = next_t - now 
+            if sleep > 0:
+                time.sleep(sleep)
+            else:
+                next_t = now
+
+
+    finally:
+        sys.stdout.write(SHOW_CURSOR + "\n")
+        sys.stdout.flush()
+        cap.release()
 
 if __name__ == "__main__":
     main()

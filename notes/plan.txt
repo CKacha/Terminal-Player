@@ -3,11 +3,14 @@ Options for reading videos
 FFmpeg
 cv2
 
+cv2 better apprently?
+
 Read every frame -> Convert to output immidetely 
 
 os - https://docs.python.org/3/library/os.html
 ffmpeg - https://kkroening.github.io/ffmpeg-python/
-cv - https://docs.opencv.org/4.x/d6/d00/tutorial_py_root.html
+cv2 NOT ONE - https://docs.opencv.org/4.x/d6/d00/tutorial_py_root.html
 
-
+numpy
+time
 
