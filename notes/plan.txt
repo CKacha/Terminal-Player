@@ -1,3 +1,13 @@
-FFmpeg
+Options for reading videos
 
-or cv2 maybe
+FFmpeg
+cv2
+
+Read every frame -> Convert to output immidetely 
+
+os - https://docs.python.org/3/library/os.html
+ffmpeg - https://kkroening.github.io/ffmpeg-python/
+cv - https://docs.opencv.org/4.x/d6/d00/tutorial_py_root.html
+
+
+
