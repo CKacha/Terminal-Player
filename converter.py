@@ -4,6 +4,7 @@ from pathlib import Path
 import os
 import sys 
 import time 
+import subprocess
 
 # Thing wasn't working or I'm stupid idk
 # Going to make it so that the target video will always be called video.mp4
@@ -65,10 +66,28 @@ def frame_to_text(frame, out_w, out_h):
     return "\n".join("".join(row) for row in chars)
 
 def main():
+    audio_proc = None
+    
+    try:
+        audio_proc = subprocess.Popen(
+            ["ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet", VIDEO_PATH],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=subprocess.CREATE_NO_WINDOW
+        )
+    except FileNotFoundError:
+        print("ffplay not found, FFMPEG ISNT INSTALLED")
+
     cap = cv2.VideoCapture(VIDEO_PATH)
     if not cap.isOpened():
         print(f"can't open video, current one is {VIDEO_PATH}")
         sys.exit(1)
+    
+    vid_fps = cap.get(cv2.CAP_PROP_FPS)
+    if vid_fps and vid_fps == vid_fps and vid_fps >1:
+        frame_dt = 1.0 / vid_fps
+    else:
+        frame_dt = 1.0 / FPS_CAP
 
     term_w, term_h = get_terminal_size()
     out_w = min(TARGET_WIDTH, term_w)
@@ -104,6 +123,7 @@ def main():
 
 
     finally:
+
         sys.stdout.write(SHOW_CURSOR + "\n")
         sys.stdout.flush()
         cap.release()
