@@ -5,6 +5,8 @@ import os
 import sys 
 import time 
 import subprocess
+import signal
+import atexit
 
 # Thing wasn't working or I'm stupid idk
 # Going to make it so that the target video will always be called video.mp4
@@ -65,8 +67,58 @@ def frame_to_text(frame, out_w, out_h):
 
     return "\n".join("".join(row) for row in chars)
 
-def main():
+def kill_process_tree(proc):
+    if not proc:
+        return
+    try:
+        if proc.poll() is None:
+            subprocess.run(
+                ["taslkill", "/PID", str(proc.pid), "/T", ""],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+    except Exception:
+        pass
+
+audio_proc = None
+
+def kill_ffplay():
+    global audio_proc
+    if audio_proc is None:
+        return
+    try:
+        subprocess.run(
+         ["taskkill", "/PID", str(audio_proc.pid), "/T", "/F"],
+         stdout=subprocess.DEVNULL,
+         stderr=subprocess.DEVNULL
+        )
+    except Exception:
+        try:
+            audio_proc.kill()
+        except Exception:
+            pass
     audio_proc = None
+
+atexit.register(kill_ffplay)
+
+def _signal_handler(sig, frame):
+    kill_ffplay()
+    raise KeyboardInterrupt
+
+signal.signal(signal.SIGINT, _signal_handler)
+signal.signal(signal.SIGTERM, _signal_handler)
+
+def main():
+    global VIDEO_PATH
+
+    cap = cv2.VideoCapture(VIDEO_PATH)
+    if not cap.isOpened():
+        print(f"can't open video, current one is {VIDEO_PATH}")
+        sys.exit(1)
+    
+    term_w, term_h = get_terminal_size()
+    out_w = min(TARGET_WIDTH, term_w)
+    out_h = min(term_h - 2, max(10, int(out_w * 0.50)))
     
     try:
         audio_proc = subprocess.Popen(
@@ -77,27 +129,15 @@ def main():
         )
     except FileNotFoundError:
         print("ffplay not found, FFMPEG ISNT INSTALLED")
+        audio_proc = None
 
-    cap = cv2.VideoCapture(VIDEO_PATH)
-    if not cap.isOpened():
-        print(f"can't open video, current one is {VIDEO_PATH}")
-        sys.exit(1)
-    
-    vid_fps = cap.get(cv2.CAP_PROP_FPS)
-    if vid_fps and vid_fps == vid_fps and vid_fps >1:
-        frame_dt = 1.0 / vid_fps
-    else:
-        frame_dt = 1.0 / FPS_CAP
-
-    term_w, term_h = get_terminal_size()
-    out_w = min(TARGET_WIDTH, term_w)
-    out_h = min(term_h - 2, max(10, int(out_w * 0.50)))
-
-    frame_dt = 1.0/FPS_CAP
-    next_t = time.perf_counter()
+    time.sleep(0.5)
 
     sys.stdout.write(CLEAR + HOME + HIDE_CURSOR)
     sys.stdout.flush()
+
+    start_time = time.perf_counter()
+    first_ts = None
 
     try:
         while True:
@@ -105,28 +145,44 @@ def main():
             if not ret:
                 break
 
-            txt= frame_to_text(frame, out_w, out_h)
+            ts_ms = cap.get(cv2.CAP_PROP_POS_MSEC)
+            if ts_ms != ts_ms:
+                ts_ms = 0.0
+
+            if first_ts is None:
+                first_ts = ts_ms
+
+            target = start_time + (ts_ms - first_ts) / 1000.0
+            now = time.perf_counter()
+
+            while now - target > 0.03:
+                ret, frame = cap.read()
+                if not ret:
+                    return
+                ts_ms = cap.get(cv2.CAP_PROP_POS_MSEC)
+                target = start_time + (ts_ms - first_ts) / 1000.0
+                now = time.perf_counter()
+            
+            sleep = target - now
+            if sleep > 0:
+                time.sleep(sleep)
+
+            txt = frame_to_text(frame, out_w, out_h)
 
             sys.stdout.write(HOME)
             sys.stdout.write(txt)
             sys.stdout.write("\n")
             sys.stdout.flush()
-
-            #fps cap bc my computer crashed earlier sob
-            next_t += frame_dt
-            now = time.perf_counter()
-            sleep = next_t - now 
-            if sleep > 0:
-                time.sleep(sleep)
-            else:
-                next_t = now
-
-
+    
+    except KeyboardInterrupt:
+        pass
     finally:
 
         sys.stdout.write(SHOW_CURSOR + "\n")
         sys.stdout.flush()
         cap.release()
+
+        kill_process_tree(audio_proc)
 
 if __name__ == "__main__":
     main()

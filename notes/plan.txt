@@ -23,4 +23,7 @@ oh ffmpeg why must you do this to me
 THE DOCUMENTATION IS NOT GOOD AT ALL SOB
 
 taaskill /PID <pid> /T /F 
-use dis to kill ffmpeg 
+use dis to kill ffmpeg  
+
+signal? https://docs.python.org/3/library/signal.html
+atexit
