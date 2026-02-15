@@ -18,7 +18,6 @@ import atexit
 #     sys.exit(1)
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-
 VIDEO_EXTS = [".mp4", ".avi", ".mkv", ".mov"]
 
 video_files = []
@@ -31,11 +30,12 @@ if not video_files:
 
 VIDEO_PATH = str(video_files[0])
 print("Using video:", Path(VIDEO_PATH).name)
-time.sleep(1)
+time.sleep(0.5)
 
-TARGET_WIDTH = 120
-FPS_CAP = 30 # DONT CHANGE THIS... you don't want to put it as True lmao
+TARGET_WIDTH = 80
+# FPS_CAP = 30 trying smth new
 USE_OTSU = True
+DROP_LATE_SEC = 0.01
 
 ON = "█"
 OFF = " "
@@ -67,49 +67,61 @@ def frame_to_text(frame, out_w, out_h):
 
     return "\n".join("".join(row) for row in chars)
 
-def kill_process_tree(proc):
-    if not proc:
-        return
+def kill_process_tree(pid: int):
     try:
-        if proc.poll() is None:
-            subprocess.run(
-                ["taslkill", "/PID", str(proc.pid), "/T", ""],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
+        subprocess.run(
+            ["taskkill", "/PID", str(pid), "/T", "/F"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
     except Exception:
         pass
 
-audio_proc = None
 
-def kill_ffplay():
-    global audio_proc
-    if audio_proc is None:
-        return
-    try:
-        subprocess.run(
-         ["taskkill", "/PID", str(audio_proc.pid), "/T", "/F"],
-         stdout=subprocess.DEVNULL,
-         stderr=subprocess.DEVNULL
-        )
-    except Exception:
-        try:
-            audio_proc.kill()
-        except Exception:
-            pass
-    audio_proc = None
+# def kill_ffplay():
+#     if audio_proc is None:
+#         return
+#     try:
+#         subprocess.run(
+#          ["taskkill", "/PID", str(audio_proc.pid), "/T", "/F"],
+#          stdout=subprocess.DEVNULL,
+#          stderr=subprocess.DEVNULL
+#         )
+#     except Exception:
+#         try:
+#             audio_proc.kill()
+#         except Exception:
+#             pass
+#     audio_proc = None
 
-atexit.register(kill_ffplay)
+# atexit.register(kill_ffplay)
 
-def _signal_handler(sig, frame):
-    kill_ffplay()
-    raise KeyboardInterrupt
+# def _signal_handler(sig, frame):
+#     kill_ffplay()
+#     raise KeyboardInterrupt
 
-signal.signal(signal.SIGINT, _signal_handler)
-signal.signal(signal.SIGTERM, _signal_handler)
+# signal.signal(signal.SIGINT, _signal_handler)
+# signal.signal(signal.SIGTERM, _signal_handler)
 
 def main():
-    global VIDEO_PATH
+    audio_holder = {"proc": None}
+
+    def kill_audio():
+        proc = audio_holder.get("proc")
+        if proc is None:
+            return
+        if proc.poll() is None:
+            kill_process_tree(proc.pid)
+        audio_holder["proc"] = None
+
+    atexit.register(kill_audio)
+
+    def on_signal(signum, frame):
+        kill_audio()
+        raise KeyboardInterrupt
+    
+    signal.signal(signal.SIGINT, on_signal)
+    signal.signal(signal.SIGTERM, on_signal)
 
     cap = cv2.VideoCapture(VIDEO_PATH)
     if not cap.isOpened():
@@ -121,7 +133,7 @@ def main():
     out_h = min(term_h - 2, max(10, int(out_w * 0.50)))
     
     try:
-        audio_proc = subprocess.Popen(
+        audio_holder["proc"] = subprocess.Popen(
             ["ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet", VIDEO_PATH],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -129,9 +141,9 @@ def main():
         )
     except FileNotFoundError:
         print("ffplay not found, FFMPEG ISNT INSTALLED")
-        audio_proc = None
+        audio_holder["proc"] = None
 
-    time.sleep(0.5)
+    time.sleep(0.1)
 
     sys.stdout.write(CLEAR + HOME + HIDE_CURSOR)
     sys.stdout.flush()
@@ -158,7 +170,7 @@ def main():
             while now - target > 0.03:
                 ret, frame = cap.read()
                 if not ret:
-                    return
+                    break
                 ts_ms = cap.get(cv2.CAP_PROP_POS_MSEC)
                 target = start_time + (ts_ms - first_ts) / 1000.0
                 now = time.perf_counter()
@@ -169,20 +181,17 @@ def main():
 
             txt = frame_to_text(frame, out_w, out_h)
 
-            sys.stdout.write(HOME)
-            sys.stdout.write(txt)
-            sys.stdout.write("\n")
+            sys.stdout.write(HOME + txt + "\n")
             sys.stdout.flush()
     
     except KeyboardInterrupt:
         pass
-    finally:
 
+    finally:
         sys.stdout.write(SHOW_CURSOR + "\n")
         sys.stdout.flush()
         cap.release()
-
-        kill_process_tree(audio_proc)
+        kill_audio()
 
 if __name__ == "__main__":
     main()
