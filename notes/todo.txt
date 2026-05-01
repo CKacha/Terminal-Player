@@ -1,4 +1,11 @@
 fix ffmpeg audio desync & audio stopping
 
 
+
 eventually use autopytoexe to make this easier 
+
+
+
+
+
+

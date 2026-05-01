@@ -23,7 +23,7 @@ VIDEO_EXTS = [".mp4", ".avi", ".mkv", ".mov"]
 video_files = []
 for ext in VIDEO_EXTS:
     video_files.extend(SCRIPT_DIR.glob(f"*{ext}"))
-
+    
 if not video_files:
     print("No video found, make sure that its a .mp4/.avi/.mkv/.mov")
     sys.exit(1)
@@ -77,7 +77,7 @@ def kill_process_tree(pid: int):
     except Exception:
         pass
 
-
+        
 # def kill_ffplay():
 #     if audio_proc is None:
 #         return
@@ -187,11 +187,15 @@ def main():
     except KeyboardInterrupt:
         pass
 
+
+
     finally:
         sys.stdout.write(SHOW_CURSOR + "\n")
         sys.stdout.flush()
         cap.release()
         kill_audio()
+
+
 
 if __name__ == "__main__":
     main()
